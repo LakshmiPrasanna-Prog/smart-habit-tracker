@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Habits() {
   const [habits, setHabits] = useState([]);
+  const [streaks, setStreaks] = useState({});
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('General');
   const [frequency, setFrequency] = useState('daily');
@@ -17,6 +18,19 @@ export default function Habits() {
     try {
       const res = await api.get('/habits');
       setHabits(res.data);
+      // fetch streak for each habit
+      const streakData = {};
+      await Promise.all(
+        res.data.map(async (habit) => {
+          try {
+            const streakRes = await api.get(`/checkins/${habit._id}/streak`);
+            streakData[habit._id] = streakRes.data.streak;
+          } catch {
+            streakData[habit._id] = 0;
+          }
+        })
+      );
+      setStreaks(streakData);
     } catch (err) {
       setError('Failed to load habits');
     } finally {
@@ -48,6 +62,15 @@ export default function Habits() {
       fetchHabits();
     } catch (err) {
       setError('Failed to delete habit');
+    }
+  };
+
+  const handleCheckIn = async (id) => {
+    try {
+      await api.post(`/checkins/${id}`);
+      fetchHabits(); // refresh to update streak
+    } catch (err) {
+      setError(err.response?.data?.message || 'Already checked in today');
     }
   };
 
@@ -115,8 +138,14 @@ export default function Habits() {
                 <div style={{ fontSize: 12, color: '#666' }}>
                   {habit.category} · {habit.frequency}
                 </div>
+                <div style={{ fontSize: 13, marginTop: 4, color: '#ff6600', fontWeight: 'bold' }}>
+                  🔥 {streaks[habit._id] ?? 0} day streak
+                </div>
               </div>
-              <button onClick={() => handleDelete(habit._id)}>Delete</button>
+              <div>
+                <button onClick={() => handleCheckIn(habit._id)}>Check In</button>
+                <button onClick={() => handleDelete(habit._id)} style={{ marginLeft: 8 }}>Delete</button>
+              </div>
             </li>
           ))}
         </ul>
