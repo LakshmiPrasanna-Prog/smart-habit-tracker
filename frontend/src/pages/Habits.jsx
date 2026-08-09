@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate, Link } from 'react-router-dom';
 export default function Habits() {
   const [habits, setHabits] = useState([]);
   const [streaks, setStreaks] = useState({});
@@ -108,10 +107,12 @@ export default function Habits() {
   return (
     <div style={{ maxWidth: 600, margin: '30px auto', padding: '0 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Hi, {user?.name}</h2>
-        <button onClick={handleLogout}>Logout</button>
-      </div>
-
+  <h2>Hi, {user?.name}</h2>
+  <div>
+    <Link to="/dashboard" style={{ marginRight: 12 }}>📊 Dashboard</Link>
+    <button onClick={handleLogout}>Logout</button>
+  </div>
+</div>
       <form onSubmit={handleAdd} style={{ marginTop: 20, marginBottom: 20 }}>
         <input
           type="text"

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Habits from './pages/Habits';
+import Dashboard from './pages/Dashboard';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -22,6 +23,14 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   );
@@ -38,5 +47,4 @@ function App() {
 }
 
 export default App;
-
 
