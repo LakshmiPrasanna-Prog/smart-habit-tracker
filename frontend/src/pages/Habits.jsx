@@ -11,6 +11,8 @@ export default function Habits() {
   const [frequency, setFrequency] = useState('daily');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -18,7 +20,6 @@ export default function Habits() {
     try {
       const res = await api.get('/habits');
       setHabits(res.data);
-      // fetch streak for each habit
       const streakData = {};
       await Promise.all(
         res.data.map(async (habit) => {
@@ -68,9 +69,32 @@ export default function Habits() {
   const handleCheckIn = async (id) => {
     try {
       await api.post(`/checkins/${id}`);
-      fetchHabits(); // refresh to update streak
+      fetchHabits();
     } catch (err) {
       setError(err.response?.data?.message || 'Already checked in today');
+    }
+  };
+
+  const handleGetSuggestions = async () => {
+    setLoadingSuggestions(true);
+    setError('');
+    try {
+      const res = await api.get('/ai/suggestions');
+      setSuggestions(res.data.suggestions);
+    } catch (err) {
+      setError('Failed to get AI suggestions');
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleAddSuggestion = async (suggestedTitle) => {
+    try {
+      await api.post('/habits', { title: suggestedTitle, category: 'AI Suggested', frequency: 'daily' });
+      setSuggestions((prev) => prev.filter((s) => s.title !== suggestedTitle));
+      fetchHabits();
+    } catch (err) {
+      setError('Failed to add suggested habit');
     }
   };
 
@@ -88,7 +112,7 @@ export default function Habits() {
         <button onClick={handleLogout}>Logout</button>
       </div>
 
-      <form onSubmit={handleAdd} style={{ marginTop: 20, marginBottom: 30 }}>
+      <form onSubmit={handleAdd} style={{ marginTop: 20, marginBottom: 20 }}>
         <input
           type="text"
           placeholder="New habit title"
@@ -113,6 +137,37 @@ export default function Habits() {
         </select>
         <button type="submit" style={{ marginLeft: 8 }}>Add Habit</button>
       </form>
+
+      <button onClick={handleGetSuggestions} disabled={loadingSuggestions} style={{ marginBottom: 20 }}>
+        {loadingSuggestions ? 'Thinking...' : '✨ Get AI Habit Suggestions'}
+      </button>
+
+      {suggestions.length > 0 && (
+        <div style={{ marginBottom: 30 }}>
+          <h4>AI Suggestions</h4>
+          {suggestions.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                border: '1px solid #ddd',
+                borderRadius: 8,
+                padding: 10,
+                marginBottom: 8,
+                background: '#f9f9f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div>
+                <strong>{s.title}</strong>
+                <div style={{ fontSize: 12, color: '#666' }}>{s.reason}</div>
+              </div>
+              <button onClick={() => handleAddSuggestion(s.title)}>Add</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
