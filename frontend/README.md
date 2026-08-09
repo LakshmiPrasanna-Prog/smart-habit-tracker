@@ -1,16 +1,60 @@
-# React + Vite
+# Smart Habit Tracker with AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack habit tracking application that uses AI to generate personalized habit recommendations, with streak tracking and progress visualization.
 
-Currently, two official plugins are available:
+**Live Demo:** https://smart-habit-tracker-seven.vercel.app
+**Backend API:** https://smart-habit-tracker-backend-tg4v.onrender.com
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- 🔐 Secure authentication with JWT and bcrypt password hashing
+- ✅ Full CRUD for habit management
+- 🔥 Daily check-in system with automatic streak calculation
+- ✨ AI-powered habit suggestions using Google's Gemini API
+- 📊 Visual dashboard with streak charts (Recharts)
+- 🔒 Protected routes and middleware-based API authorization
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+**Frontend:** React (Vite), React Router, Axios, Recharts
+**Backend:** Node.js, Express.js
+**Database:** MongoDB (Atlas)
+**AI:** Google Gemini API
+**Deployment:** Vercel (frontend), Render (backend)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Architecture
+## Getting Started (Local Development)
+
+### Backend
+```bash
+cd backend
+npm install
+# Create a .env file with MONGO_URI, JWT_SECRET, GEMINI_API_KEY, PORT
+npm run dev
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+# Create a .env file with VITE_API_URL=http://localhost:5000/api
+npm run dev
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/signup` | Register a new user |
+| POST | `/api/auth/login` | Authenticate user |
+| GET | `/api/habits` | Get user's habits |
+| POST | `/api/habits` | Create a new habit |
+| PUT | `/api/habits/:id` | Update a habit |
+| DELETE | `/api/habits/:id` | Delete a habit |
+| POST | `/api/checkins/:habitId` | Check in a habit for today |
+| GET | `/api/checkins/:habitId/streak` | Get current streak |
+| GET | `/api/ai/suggestions` | Get AI-generated habit suggestions |
+
+## Author
+
+Upputala Sri Lakshmi Prasanna
