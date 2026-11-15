@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const habitRoutes = require('./routes/habitRoutes');
 const checkInRoutes = require('./routes/checkInRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const gamificationRoutes = require('./routes/gamificationRoutes');
 
 const app = express();
 app.use(cors());
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/checkins', checkInRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

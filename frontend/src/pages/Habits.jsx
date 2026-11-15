@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import GamificationPanel from '../components/GamificationPanel';
+
 export default function Habits() {
   const [habits, setHabits] = useState([]);
   const [streaks, setStreaks] = useState({});
+  const [stats, setStats] = useState(null);
+  const [message, setMessage] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('General');
   const [frequency, setFrequency] = useState('daily');
@@ -14,6 +18,38 @@ export default function Habits() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const earnedBefore = useRef(null);
+  const pointsBefore = useRef(null);
+  const messageTimer = useRef(null);
+
+  const showMessage = (text) => {
+    setMessage(text);
+    clearTimeout(messageTimer.current);
+    messageTimer.current = setTimeout(() => setMessage(''), 3500);
+  };
+
+    const fetchStats = async () => {
+    try {
+      const res = await api.get('/gamification');
+      const earnedNow = res.data.badges.filter((b) => b.earned).map((b) => b.id);
+      const parts = [];
+      if (pointsBefore.current !== null && res.data.points > pointsBefore.current) {
+        parts.push(`🎉 +${res.data.points - pointsBefore.current} points!`);
+      }
+      if (earnedBefore.current) {
+        const newOnes = res.data.badges.filter((b) => b.earned && !earnedBefore.current.includes(b.id));
+        if (newOnes.length > 0) {
+          parts.push(`🏅 New badge unlocked: ${newOnes.map((b) => b.name).join(', ')}`);
+        }
+      }
+      if (parts.length > 0) showMessage(parts.join('   '));
+      pointsBefore.current = res.data.points;
+      earnedBefore.current = earnedNow;
+      setStats(res.data);
+    } catch (err) {
+      // gamification is extra: if it fails, the rest of the page still works
+    }
+  };
 
   const fetchHabits = async () => {
     try {
@@ -31,6 +67,7 @@ export default function Habits() {
         })
       );
       setStreaks(streakData);
+      fetchStats();
     } catch (err) {
       setError('Failed to load habits');
     } finally {
@@ -66,8 +103,10 @@ export default function Habits() {
   };
 
   const handleCheckIn = async (id) => {
+    setError('');
     try {
       await api.post(`/checkins/${id}`);
+           showMessage('✅ Checked in!');
       fetchHabits();
     } catch (err) {
       setError(err.response?.data?.message || 'Already checked in today');
@@ -102,18 +141,34 @@ export default function Habits() {
     navigate('/login');
   };
 
+  const statsByHabit = {};
+  (stats?.habits || []).forEach((h) => {
+    statsByHabit[h.habitId] = h;
+  });
+
   if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
 
   return (
     <div style={{ maxWidth: 600, margin: '30px auto', padding: '0 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-  <h2>Hi, {user?.name}</h2>
-  <div>
-    <Link to="/dashboard" style={{ marginRight: 12 }}>📊 Dashboard</Link>
-    <button onClick={handleLogout}>Logout</button>
-  </div>
-</div>
-      <form onSubmit={handleAdd} style={{ marginTop: 20, marginBottom: 20 }}>
+        <h2>Hi, {user?.name}</h2>
+        <div>
+          <Link to="/dashboard" style={{ marginRight: 12 }}>📊 Dashboard</Link>
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+      </div>
+
+      {message && (
+        <div style={{ background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 8, padding: 10, marginTop: 10 }}>
+          {message}
+        </div>
+      )}
+
+      <div style={{ marginTop: 16 }}>
+        <GamificationPanel stats={stats} />
+      </div>
+
+      <form onSubmit={handleAdd} style={{ marginBottom: 20 }}>
         <input
           type="text"
           placeholder="New habit title"
@@ -176,34 +231,38 @@ export default function Habits() {
         <p>No habits yet — add one above to get started.</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {habits.map((habit) => (
-            <li
-              key={habit._id}
-              style={{
-                border: '1px solid #ccc',
-                borderRadius: 8,
-                padding: 12,
-                marginBottom: 10,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}
-            >
-              <div>
-                <strong>{habit.title}</strong>
-                <div style={{ fontSize: 12, color: '#666' }}>
-                  {habit.category} · {habit.frequency}
+          {habits.map((habit) => {
+            const hs = statsByHabit[habit._id];
+            return (
+              <li
+                key={habit._id}
+                style={{
+                  border: '1px solid #ccc',
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 10,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div>
+                  <strong>{habit.title}</strong>
+                  <div style={{ fontSize: 12, color: '#666' }}>
+                    {habit.category} · {habit.frequency}
+                  </div>
+                  <div style={{ fontSize: 13, marginTop: 4, color: '#ff6600', fontWeight: 'bold' }}>
+                    🔥 {streaks[habit._id] ?? 0} day streak
+                    {hs ? ` · 📅 ${hs.weeklyStreak} week streak · 🏅 best ${hs.longestStreak} days` : ''}
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, marginTop: 4, color: '#ff6600', fontWeight: 'bold' }}>
-                  🔥 {streaks[habit._id] ?? 0} day streak
+                <div>
+                  <button onClick={() => handleCheckIn(habit._id)}>Check In</button>
+                  <button onClick={() => handleDelete(habit._id)} style={{ marginLeft: 8 }}>Delete</button>
                 </div>
-              </div>
-              <div>
-                <button onClick={() => handleCheckIn(habit._id)}>Check In</button>
-                <button onClick={() => handleDelete(habit._id)} style={{ marginLeft: 8 }}>Delete</button>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
